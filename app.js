@@ -1,5 +1,5 @@
 // app.js
-
+console.log('🔥 app.js loaded');
 let masterData = {};
 
 // 1) Load product box sizes
