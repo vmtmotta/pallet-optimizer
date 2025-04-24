@@ -9,7 +9,7 @@ const PALLET_WT     =  25;  // kg empty pallet
 
 let products = {};
 
-// 1) Load product master-data
+// 1) Load master data
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await fetch(`products-detail.json?cb=${Date.now()}`);
@@ -27,7 +27,7 @@ document.getElementById('go').addEventListener('click', async () => {
     return alert('Enter a customer name and select an Excel file.');
   }
 
-  // 2) Read workbook & first sheet
+  // 2) Read the uploaded workbook & sheet
   const buf       = await fileIn.files[0].arrayBuffer();
   const wb        = XLSX.read(buf, { type: 'array' });
   const sheetName = wb.SheetNames[0];
@@ -40,7 +40,7 @@ document.getElementById('go').addEventListener('click', async () => {
     blankrows: false
   });
 
-  // 4) Find header row
+  // 4) Detect header row
   const labels = [
     'REF',
     'PRODUCT',
@@ -67,18 +67,18 @@ document.getElementById('go').addEventListener('click', async () => {
     return alert('Could not find header row with REF / PRODUCT / BOX USED / ORDER IN UNITS.');
   }
 
-  // 5) Build orders list
+  // 5) Build orders[]
   const orders = [];
   for (let i = h + 1; i < rows.length; i++) {
     const r   = rows[i];
     const raw = r[ci.REF];
-    if (raw == null || raw.toString().trim() === '') break;
+    if (raw == null || !raw.toString().trim()) break;
     const sku = raw.toString().trim();
-    if (!products[sku]) continue; // skip calibration or unknown
+    if (!products[sku]) continue;
     orders.push({
       sku,
       name:   r[ci.PROD]?.toString().trim() || sku,
-      boxKey: r[ci.BOX]?.toString().trim().toLowerCase(),  // box1 or box2
+      boxKey: r[ci.BOX]?.toString().trim().toLowerCase(),
       units:  Number(r[ci.UNITS]) || 0
     });
   }
@@ -87,25 +87,25 @@ document.getElementById('go').addEventListener('click', async () => {
       '<p><em>No valid order lines found. Check your file.</em></p>';
   }
 
-  // 6) Expand to box instances
+  // 6) Expand orders → instances
   let instances = [];
   orders.forEach(o => {
-    const pd    = products[o.sku];
-    const spec  = pd[o.boxKey];
+    const pd   = products[o.sku];
+    const spec = pd[o.boxKey];
     if (!spec || !spec.units) {
-      console.warn(`Missing box spec for ${o.sku} → ${o.boxKey}`);
+      console.warn(`Missing spec for ${o.sku}→${o.boxKey}`);
       return;
     }
     const count = Math.ceil(o.units / spec.units);
-    const [L, D, H] = spec.dimensions;
-    for (let k = 0; k < count; k++) {
+    const [L,D,H] = spec.dimensions;
+    for (let k=0; k<count; k++) {
       instances.push({
         sku:       o.sku,
         name:      o.name,
         fragility: pd.fragility.toLowerCase(),
         weight:    spec.weight,
-        dims:      { l: L, w: D, h: H },
-        canRotate: spec.orientation.toLowerCase() === 'both'
+        dims:      {l:L, w:D, h:H},
+        canRotate: spec.orientation.toLowerCase()==='both'
       });
     }
   });
@@ -127,8 +127,8 @@ document.getElementById('go').addEventListener('click', async () => {
     while (remaining.length) {
       const { placed, notPlaced } = packLayer(remaining);
       if (!placed.length) break;
-      const layerH  = Math.max(...placed.map(x => x.box.dims.h));
-      const layerWT = placed.reduce((s,x) => s + x.box.weight, 0);
+      const layerH  = Math.max(...placed.map(x=>x.box.dims.h));
+      const layerWT = placed.reduce((s,x)=>s + x.box.weight, 0);
       if (usedH + layerH > PALLET_MAX_H) break;
       if (usedWT + layerWT > PALLET_MAX_WT) break;
       pal.layers.push({ boxes: placed, height: layerH, weight: layerWT });
@@ -140,13 +140,13 @@ document.getElementById('go').addEventListener('click', async () => {
     pallets.push(pal);
   }
 
-  // 9) Render
+  // 9) Render full layout
   let html = `<h1>${customer}</h1>`;
-  let totalBoxes = 0, totalUnits = 0, totalWT = 0;
+  let totalBoxes=0, totalUnits=0, totalWT=0;
 
   pallets.forEach((p, idx) => {
     html += `<h2>PALLET ${idx+1}</h2>`;
-    let pUnits = 0, pBoxes = 0, pWT = PALLET_WT, pH = 0;
+    let pUnits=0, pBoxes=0, pWT=PALLET_WT, pH=0;
 
     p.layers.forEach((ly, li) => {
       html += `<h3>LAYER${li+1}</h3>
@@ -159,9 +159,9 @@ document.getElementById('go').addEventListener('click', async () => {
       const cnt = {};
       ly.boxes.forEach(b => cnt[b.box.sku] = (cnt[b.box.sku]||0) + 1);
       Object.entries(cnt).forEach(([sku, n]) => {
-        const ord = orders.find(o => o.sku === sku);
-        const perBox = products[sku][ord.boxKey].units;
-        const units  = perBox * n;
+        const ord = orders.find(o=>o.sku===sku);
+        const per = products[sku][ord.boxKey].units;
+        const units = per * n;
         html += `<tr>
           <td>${sku}</td>
           <td>${ord.name}</td>
@@ -169,8 +169,7 @@ document.getElementById('go').addEventListener('click', async () => {
           <td>${ord.boxKey.toUpperCase()}</td>
           <td style="text-align:right">${n}</td>
         </tr>`;
-        pUnits += units;
-        pBoxes += n;
+        pUnits += units; pBoxes += n;
       });
 
       pWT += ly.weight;
@@ -196,70 +195,67 @@ document.getElementById('go').addEventListener('click', async () => {
 });
 
 
-// Compute the maximum count of a single box per layer via a two-orientation grid-fill
+// Compute best grid count of a single box type
 function bestSingleGridCount(boxDims, canRotate) {
   const opts = [{l:boxDims.l, w:boxDims.w}];
   if (canRotate) opts.push({l:boxDims.w, w:boxDims.l});
   let best = 0;
-
-  opts.forEach((o1, i1) => {
+  opts.forEach((o1,i1) => {
     const cols = Math.floor(PALLET_L / o1.l);
     const rows = Math.floor(PALLET_W / o1.w);
     const base = cols * rows;
-    const remL = PALLET_L - cols * o1.l;  // right strip
-    const remW = PALLET_W - rows * o1.w;  // top strip
-
+    const remL = PALLET_L - cols * o1.l;
+    const remW = PALLET_W - rows * o1.w;
     let extra = 0;
-    opts.forEach((o2, i2) => {
-      if (i2 === i1) return;
+    opts.forEach((o2,i2) => {
+      if (i2===i1) return;
       const c2 = Math.floor(remL / o2.l) * Math.floor(PALLET_W / o2.w);
       const c3 = Math.floor(PALLET_L / o2.l) * Math.floor(remW / o2.w);
       extra = Math.max(extra, c2 + c3);
     });
-
     best = Math.max(best, base + extra);
   });
-
   return best;
 }
 
-// Pack one layer: use grid-fill for single-SKU, else guillotine
-function packLayer(boxes) {
-  // detect single-SKU
-  const allSame = boxes.every(b => b.box.sku === boxes[0].box.sku);
-  if (allSame) {
-    const b0 = boxes[0].box;
+// Pack one layer: grid for single-SKU, guillotine otherwise
+function packLayer(boxArray) {
+  // detect single SKU
+  if (boxArray.every(b => b.sku === boxArray[0].sku)) {
+    const b0 = boxArray[0];
     const maxCount = bestSingleGridCount(b0.dims, b0.canRotate);
-    const take = Math.min(maxCount, boxes.length);
-    return { placed: boxes.slice(0, take), notPlaced: boxes.slice(take) };
+    const take = Math.min(maxCount, boxArray.length);
+    const taken = boxArray.slice(0, take);
+    return {
+      placed: taken.map(inst => ({ box: inst })),
+      notPlaced: boxArray.slice(take)
+    };
   }
 
-  // guillotine for mixed-SKU
+  // guillotine for mixed SKUs
   const free = [{ x:0, y:0, w:PALLET_L, h:PALLET_W }];
   const placed = [];
-  let notPlaced = boxes.slice();
+  let notPlaced = boxArray.slice();
 
-  boxes.forEach(b => {
+  boxArray.forEach(inst => {
     let fit = null;
-    const opts = [{l:b.box.dims.l, w:b.box.dims.w}];
-    if (b.box.canRotate) opts.push({l:b.box.dims.w, w:b.box.dims.l});
+    const opts = [{l:inst.dims.l, w:inst.dims.w}];
+    if (inst.canRotate) opts.push({l:inst.dims.w, w:inst.dims.l});
 
     for (const r of free) {
       for (const d of opts) {
-        if (d.l <= r.w && d.w <= r.h) { fit = {rect:r, dims:d}; break; }
+        if (d.l <= r.w && d.w <= r.h) { fit={rect:r,dims:d}; break; }
       }
       if (fit) break;
     }
     if (!fit) return;
-
-    placed.push({ box:b.box, x:fit.rect.x, y:fit.rect.y, dims:fit.dims });
-    free.splice(free.indexOf(fit.rect),1);
+    placed.push({ box: inst, x: fit.rect.x, y: fit.rect.y, dims: fit.dims });
+    free.splice(free.indexOf(fit.rect), 1);
     free.push(
-      { x: fit.rect.x + fit.dims.l, y: fit.rect.y,       w: fit.rect.w - fit.dims.l, h: fit.dims.w },
-      { x: fit.rect.x,            y: fit.rect.y + fit.dims.w, w: fit.rect.w,             h: fit.rect.h - fit.dims.w }
+      { x: fit.rect.x + fit.dims.l, y: fit.rect.y,        w: fit.rect.w - fit.dims.l, h: fit.dims.w },
+      { x: fit.rect.x,             y: fit.rect.y + fit.dims.w, w: fit.rect.w,               h: fit.rect.h - fit.dims.w }
     );
-
-    notPlaced = notPlaced.filter(x => x !== b);
+    notPlaced = notPlaced.filter(i => i !== inst);
   });
 
   return { placed, notPlaced };
