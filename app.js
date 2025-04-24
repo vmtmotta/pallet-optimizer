@@ -1,183 +1,233 @@
 // app.js
 
-// Pallet specs
-const PALLET_L = 120, PALLET_W = 80, PALLET_MAX_H = 170, PALLET_EMPTY_WT = 25;
+// Pallet constraints
+const PALLET_L      = 120;  // cm
+const PALLET_W      =  80;  // cm
+const PALLET_MAX_H  = 170;  // cm total stack height
+const PALLET_MAX_WT = 600;  // kg including pallet
+const PALLET_WT     =  25;  // kg empty pallet
 
-let productsBySku = {};
+let products = {};
 
-// simple dim parser
-function parseDims(s="0x0x0") {
-  let [l,w,h] = s.split(/[x×]/i).map(Number);
-  return { l,w,h };
-}
-
-// 1) load products-detail.json (top-level array of {REF,...})
+// 1) Load product master data
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    const resp = await fetch('products-detail.json');
-    const list = await resp.json();
-    list.forEach(p => {
-      productsBySku[p.REF] = {
-        name: p.PRODUCT,
-        box1Units:   +p["Box 1 Units"]       || 0,
-        box1Weight:  +p["Box 1 Weight (kg)"] || 0,
-        box1Orient:  p["Box 1 Orientation (Horizontal / Both)"].toLowerCase(),
-        box1Dims:    parseDims(p["Box 1 Dimensions (cm) (LxDxH)"]),
-        box2Units:   +p["Box 2 Units"]       || 0,
-        box2Weight:  +p["Box 2 Weight (kg)"] || 0,
-        box2Orient:  p["Box 2 Orientation (Horizontal / Both)"].toLowerCase(),
-        box2Dims:    parseDims(p["Box 2 Dimensions (cm) (LxDxH)"])
-      };
-    });
-    console.log("Loaded SKUs:", Object.keys(productsBySku).length);
+    const res = await fetch(`products-detail.json?cb=${Date.now()}`);
+    products = await res.json();
   } catch (e) {
-    alert("Could not load products-detail.json");
-    console.error(e);
+    console.error('Error loading products-detail.json', e);
+    alert('Could not load product master data.');
   }
 });
 
-// 2) read .xlsx order
-function readOrderFile(file) {
-  return new Promise((res,rej) => {
-    const fr = new FileReader();
-    fr.onload = e => {
-      try {
-        const wb = XLSX.read(e.target.result, { type:'binary' });
-        const sh = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sh, { header:1, blankrows:false });
-        const hdr  = rows.find(r =>
-          r.includes("REF") &&
-          r.includes("BOX USED (BOX1 or BOX2)") &&
-          r.includes("ORDER IN UNITS")
-        );
-        const iREF = hdr.indexOf("REF");
-        const iBOX = hdr.indexOf("BOX USED (BOX1 or BOX2)");
-        const iUN  = hdr.indexOf("ORDER IN UNITS");
-        const lines = [];
-        for (let i = rows.indexOf(hdr)+1; i < rows.length; i++) {
-          const r = rows[i];
-          if (!r[iREF]) break;
-          lines.push({
-            sku:    r[iREF].toString().trim(),
-            boxKey: r[iBOX].toString().trim().toLowerCase(),
-            units:  +r[iUN]||0
-          });
-        }
-        res(lines);
-      } catch (err) {
-        rej(err);
-      }
-    };
-    fr.onerror = () => rej(fr.error);
-    fr.readAsBinaryString(file);
-  });
-}
-
-// 3) basic 5+2 grid solver
-function bestSingleGridCount(d, canRotate) {
-  let best=0, L=PALLET_L, W=PALLET_W;
-  const opts = [{l:d.l,w:d.w}];
-  if (canRotate) opts.push({l:d.w,w:d.l});
-  opts.forEach((o1,i1)=>{
-    const rows = Math.floor(L/o1.l), cols = Math.floor(W/o1.w);
-    const base = rows*cols;
-    const remL = L-rows*o1.l, remW = W-cols*o1.w;
-    let extra=0;
-    opts.forEach((o2,i2)=>{
-      if (i1===i2) return;
-      const c1 = Math.floor(remL/o2.l)*Math.floor(W/o2.w);
-      const c2 = Math.floor(L/o2.l)*Math.floor(remW/o2.w);
-      extra = Math.max(extra, c1+c2);
-    });
-    best = Math.max(best, base+extra);
-  });
-  return best;
-}
-
-// 4) pack one layer
-function packLayer(insts) {
-  if (!insts.length) return {placed:[],notPlaced:[]};
-  const sku0 = insts[0].sku;
-  if (insts.every(x=>x.sku===sku0)) {
-    const pd = productsBySku[sku0];
-    const dims = pd[insts[0].boxKey+"Dims"];
-    const canR = pd[insts[0].boxKey+"Orient"]==="both";
-    const maxCnt = bestSingleGridCount(dims,canR);
-    const take = Math.min(maxCnt, insts.length);
-    return {
-      placed: insts.slice(0,take).map(b=>({box:b})),
-      notPlaced: insts.slice(take)
-    };
+document.getElementById('go').addEventListener('click', async () => {
+  const customer = document.getElementById('customer').value.trim();
+  const fileIn   = document.getElementById('fileInput');
+  if (!customer || !fileIn.files.length) {
+    return alert('Enter a customer name and select an Excel file.');
   }
-  // mixed-SKU: simple guillotine
-  let free=[{x:0,y:0,w:PALLET_L,h:PALLET_W}], placed=[], rem=[...insts];
-  insts.forEach(inst=>{
-    const pd = productsBySku[inst.sku];
-    const dims = pd[inst.boxKey+"Dims"];
-    const canR = pd[inst.boxKey+"Orient"]==="both";
-    const opts=[{l:dims.l,w:dims.w}];
-    if (canR) opts.push({l:dims.w,w:dims.l});
-    let slot=null,d=null;
-    outer: for (let r of free) {
-      for (let o of opts) {
-        if (o.l<=r.w && o.w<=r.h) { slot=r; d=o; break outer; }
-      }
-    }
-    if (!slot) return;
-    placed.push({box:inst,dims:d});
-    rem = rem.filter(x=>x!==inst);
-    free = free.filter(x=>x!==slot);
-    free.push(
-      {x:slot.x+d.l,y:slot.y,      w:slot.w-d.l,h:d.w},
-      {x:slot.x,y:slot.y+d.w,      w:slot.w,    h:slot.h-d.w}
+
+  // 2) Read workbook & first sheet
+  const buf = await fileIn.files[0].arrayBuffer();
+  const wb  = XLSX.read(buf, { type:'array' });
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+
+  // 3) Get all rows as arrays
+  const rows = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    raw:    true,
+    blankrows: false
+  });
+
+  // 4) Detect header row (looking for REF, PRODUCT, BOX USED..., ORDER IN UNITS)
+  const labels = [
+    'REF',
+    'PRODUCT',
+    'BOX USED (BOX1 OR BOX2)',
+    'ORDER IN UNITS'
+  ];
+  let h = -1, ci = {};
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const up = rows[i].map(c =>
+      c != null ? c.toString().toUpperCase().trim() : ''
     );
-  });
-  return {placed,notPlaced:rem};
-}
-
-// 5) optimize and dump a simple text list
-async function optimize(){
-  const cust = document.getElementById("customer").value.trim();
-  if (!cust) return alert("Enter customer");
-  const fi = document.getElementById("fileInput");
-  if (!fi.files.length) return alert("Select file");
-  let lines;
-  try { lines = await readOrderFile(fi.files[0]); }
-  catch(e){ return alert("Read error: "+e.message); }
-  if (!lines.length) {
-    return document.getElementById("results").innerHTML = "<pre>No valid lines</pre>";
+    if (labels.every(l => up.includes(l))) {
+      h = i;
+      ci = {
+        REF:   up.indexOf('REF'),
+        PROD:  up.indexOf('PRODUCT'),
+        BOX:   up.indexOf('BOX USED (BOX1 OR BOX2)'),
+        UNITS: up.indexOf('ORDER IN UNITS')
+      };
+      break;
+    }
+  }
+  if (h < 0) {
+    return alert('Could not find header row with REF / PRODUCT / BOX USED / ORDER IN UNITS.');
   }
 
-  // expand
-  let insts = [];
-  lines.forEach(l=>{
-    const pd = productsBySku[l.sku];
-    if (!pd) return;
-    const cap = pd[l.boxKey+"Units"];
-    const cnt = Math.ceil(l.units/cap);
-    for(let i=0;i<cnt;i++){
-      insts.push({
-        sku:l.sku,
-        product:pd.name,
-        boxKey:l.boxKey,
-        weight:pd[l.boxKey+"Weight"],
-        dims:pd[l.boxKey+"Dims"],
-        canRotate:pd[l.boxKey+"Orient"]==="both"
+  // 5) Parse orders from rows[h+1...] until blank REF, only valid SKUs
+  const orders = [];
+  for (let i = h + 1; i < rows.length; i++) {
+    const r  = rows[i];
+    const raw= r[ci.REF];
+    if (raw == null || raw.toString().trim() === '') break;
+    const sku = raw.toString().trim();
+    if (!products[sku]) {
+      // skip any calibration or unknown rows
+      continue;
+    }
+    orders.push({
+      sku,
+      name:   r[ci.PROD]?.toString().trim() || sku,
+      boxKey: r[ci.BOX]?.toString().trim().toLowerCase(), // "box1" or "box2"
+      units:  Number(r[ci.UNITS]) || 0
+    });
+  }
+  if (!orders.length) {
+    return document.getElementById('output').innerHTML =
+      '<p><em>No valid order lines found. Check your file.</em></p>';
+  }
+
+  // 6) Expand each order into individual box instances
+  let instances = [];
+  orders.forEach(o => {
+    const pd = products[o.sku];
+    const spec = pd[o.boxKey];
+    if (!spec || !spec.units) {
+      console.warn(`Missing box spec for ${o.sku} → ${o.boxKey}`);
+      return;
+    }
+    const count = Math.ceil(o.units / spec.units);
+    const [L, D, H] = spec.dimensions;
+    for (let k = 0; k < count; k++) {
+      instances.push({
+        sku: o.sku,
+        name: o.name,
+        fragility: pd.fragility.toLowerCase(),
+        weight:    spec.weight,
+        dims:      { l: L, w: D, h: H },
+        canRotate: spec.orientation.toLowerCase() === 'both'
       });
     }
   });
-  if (!insts.length) {
-    return document.getElementById("results").innerHTML =
-      "<pre>No boxes after expansion.</pre>";
+  if (!instances.length) {
+    return document.getElementById('output').innerHTML =
+      '<p><em>No boxes to pack after expansion.</em></p>';
   }
 
-  // pack only 1 pallet, 1 layer
-  const {placed,notPlaced} = packLayer(insts);
-  let out = `PALLET 1 → Layer 1:\n`;
-  placed.forEach(b=>{
-    out += `  ${b.box.sku} (${b.boxKey.toUpperCase()})\n`;
-  });
-  document.getElementById("results").innerHTML = `<pre>${out}</pre>`;
-}
+  // 7) Sort by fragility (strong → medium → fragile)
+  const fragOrder = { strong:0, medium:1, fragile:2 };
+  instances.sort((a,b) => fragOrder[a.fragility] - fragOrder[b.fragility]);
 
-document.getElementById("go").addEventListener("click", optimize);
+  // 8) Guillotine‐pack into pallets
+  let remaining = instances.slice(), pallets = [];
+  while (remaining.length) {
+    let usedH = 0, usedWT = PALLET_WT;
+    const pal = { layers: [] };
+
+    while (remaining.length) {
+      const { placed, notPlaced } = packLayer(remaining);
+      if (!placed.length) break;
+      const layerH  = Math.max(...placed.map(x=>x.box.dims.h));
+      const layerWT = placed.reduce((s,x)=>s + x.box.weight, 0);
+      if (usedH + layerH > PALLET_MAX_H) break;
+      if (usedWT + layerWT > PALLET_MAX_WT) break;
+      pal.layers.push({ boxes: placed, height: layerH, weight: layerWT });
+      usedH  += layerH;
+      usedWT += layerWT;
+      remaining = notPlaced;
+    }
+    pallets.push(pal);
+  }
+
+  // 9) Render result
+  let html = `<h1>${customer}</h1>`;
+  let totalBoxes=0, totalUnits=0, totalWT=0;
+
+  pallets.forEach((p, idx) => {
+    html += `<h2>PALLET ${idx+1}</h2>`;
+    let pUnits=0, pBoxes=0, pWT=PALLET_WT, pH=0;
+
+    p.layers.forEach((ly, li) => {
+      html += `<h3>LAYER${li+1}</h3>
+        <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th>SKU</th><th>Product</th><th>Units</th>
+              <th>Box Type</th><th>Boxes Needed</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      const cnt = {};
+      ly.boxes.forEach(b => cnt[b.box.sku] = (cnt[b.box.sku]||0) + 1);
+      Object.entries(cnt).forEach(([sku, n]) => {
+        const ord = orders.find(o => o.sku === sku);
+        const perBox = products[sku][ord.boxKey].units;
+        const units  = perBox * n;
+        html += `<tr>
+          <td>${sku}</td>
+          <td>${ord.name}</td>
+          <td style="text-align:right">${units}</td>
+          <td>${ord.boxKey.toUpperCase()}</td>
+          <td style="text-align:right">${n}</td>
+        </tr>`;
+        pUnits += units;
+        pBoxes += n;
+      });
+
+      pWT += ly.weight;
+      pH  += ly.height;
+      html += `</tbody></table>`;
+    });
+
+    html += `<p><strong>Summary pallet ${idx+1}:</strong>
+      ${pUnits} units | ${pBoxes} Boxes | 
+      Total Weight: ${pWT.toFixed(1)} Kg | 
+      Total Height: ${pH} cm</p>`;
+
+    totalBoxes += pBoxes;
+    totalUnits += pUnits;
+    totalWT    += pWT;
+  });
+
+  html += `<h2>ORDER RESUME:</h2>
+    <p>Total Pallets: ${pallets.length}<br>
+       Total Weight: ${totalWT.toFixed(1)} Kg</p>`;
+
+  document.getElementById('output').innerHTML = html;
+});
+
+// Guillotine‐style pack for one layer
+function packLayer(boxes) {
+  const free = [{ x:0, y:0, w:PALLET_L, h:PALLET_W }];
+  const placed = [];
+  let notPlaced = boxes.slice();
+
+  boxes.forEach(b => {
+    let fit = null;
+    const opts = [{ l:b.dims.l, w:b.dims.w }];
+    if (b.canRotate) opts.push({ l:b.dims.w, w:b.dims.l });
+
+    for (const r of free) {
+      for (const d of opts) {
+        if (d.l <= r.w && d.w <= r.h) { fit = { rect:r, dims:d }; break; }
+      }
+      if (fit) break;
+    }
+    if (!fit) return;
+
+    placed.push({ box:b, x:fit.rect.x, y:fit.rect.y, dims:fit.dims });
+    free.splice(free.indexOf(fit.rect), 1);
+    free.push(
+      { x: fit.rect.x + fit.dims.l, y: fit.rect.y,       w: fit.rect.w - fit.dims.l, h: fit.dims.w },
+      { x: fit.rect.x,            y: fit.rect.y + fit.dims.w, w: fit.rect.w,             h: fit.rect.h - fit.dims.w }
+    );
+
+    notPlaced = notPlaced.filter(x => x !== b);
+  });
+
+  return { placed, notPlaced };
+}
