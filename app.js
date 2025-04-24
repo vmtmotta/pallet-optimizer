@@ -14,7 +14,12 @@ document.getElementById('go').addEventListener('click', async () => {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 3 });
 
   // 2) Extract real data rows (skip header row)
-  const dataRows = rows.slice(1).filter(r => r[2]);
+  // Remove blank rows and the header row where r[2] === "REF"
+const dataRows = rows.filter(r =>
+  Array.isArray(r) &&
+  r[2] && 
+  r[2].toString().trim().toUpperCase() !== "REF"
+);
   const items = dataRows.map(r => ({
     sku:    r[2].toString().trim(),
     name:   r[3].toString().trim(),
