@@ -32,11 +32,9 @@ document.getElementById('go').addEventListener('click', async () => {
   const data = await fileInput.files[0].arrayBuffer();
   const wb   = XLSX.read(data, { type: 'array' });
 
-  // 2) Grab the “02_Order” sheet (explicitly)
-  const sheetName = '02_Order';
-  if (!wb.SheetNames.includes(sheetName)) {
-    return alert(`Order sheet "${sheetName}" not found in workbook.`);
-  }
+  // 2) Use whichever sheet is first in the uploaded file
+  const sheetName = wb.SheetNames[0];
+  console.log('Using first sheet:', sheetName);
   const ws = wb.Sheets[sheetName];
 
   // 3) Convert to row arrays, skipping exactly 1 header row
