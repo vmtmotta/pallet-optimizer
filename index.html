@@ -10,19 +10,31 @@
 
   <!-- Table styling -->
   <style>
-  /* Use automatic layout so columns size to their content */
+  /* Allow horizontal scroll if table is wider than viewport */
+  #output {
+    overflow-x: auto;
+  }
+
+  /* Table with automatic layout (columns sized by content) */
   table {
     border-collapse: collapse;
-    table-layout: auto; /* <-- key */
-    /* no width:100%; */
+    table-layout: auto; /* each column width = widest cell */
   }
+
+  /* Cells: border & padding */
   th, td {
     border: 1px solid #666;
     padding: 8px;
-    white-space: normal;       /* wrap text */
-    word-break: break-word;     /* break long words */
+    white-space: nowrap; /* no wrapping, so width = longest content */
   }
-  /* no explicit width rules on any column */
+
+  /* If you want the Product column to wrap, you can override here: */
+  th:nth-child(2),
+  td:nth-child(2) {
+    white-space: normal;   /* allow wrapping in Product column */
+    word-break: break-word;
+    min-width: 200px;      /* optional: set a minimum width */
+  }
 </style>
 </head>
 <body>
