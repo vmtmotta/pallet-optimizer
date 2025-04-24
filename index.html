@@ -2,36 +2,31 @@
 <html lang="en">
 <head>
 <style>
-  /* Make the whole table fill width and fix column widths */
+  /* Full-width table, auto-sized columns */
   table {
     width: 100%;
-    table-layout: fixed;
+    /* Use automatic layout so columns expand for long text */
+    table-layout: auto;
     border-collapse: collapse;
   }
+
+  /* Cell borders and padding */
   th, td {
-    padding: 6px;
     border: 1px solid #666;
-    /* allow long text to wrap */
+    padding: 6px;
+  }
+
+  /* Allow text to wrap in data cells */
+  td {
     white-space: normal;
     word-break: break-word;
-    vertical-align: top;
   }
-  /* Give the Product column more room (column 2) */
+
+  /* Make the product column wider, let SKU/Boxes stay compact */
   th:nth-child(2),
   td:nth-child(2) {
-    width: 40%;
+    width: 50%;
   }
-  /* Optionally narrow SKU, Box Type, Boxes Needed */
-  th:nth-child(1),
-  td:nth-child(1),
-  th:nth-child(4),
-  td:nth-child(4),
-  th:nth-child(5),
-  td:nth-child(5) {
-    width: auto;
-    white-space: nowrap;
-  }
-</style>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pallet Optimizer</title>
