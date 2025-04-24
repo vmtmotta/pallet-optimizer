@@ -10,38 +10,20 @@
 
   <!-- Table styling -->
   <style>
-    /* Full-width table with auto layout */
-    table {
-      width: 100%;
-      table-layout: auto;
-      border-collapse: collapse;
-    }
-    /* Borders & padding */
-    th, td {
-      border: 1px solid #666;
-      padding: 8px;
-    }
-    /* Wrap long text in data cells */
-    td {
-      white-space: normal;
-      word-break: break-word;
-    }
-    /* Product column wider */
-    th:nth-child(2),
-    td:nth-child(2) {
-      width: 50%;
-    }
-    /* Keep SKU/box columns compact */
-    th:nth-child(1),
-    td:nth-child(1),
-    th:nth-child(4),
-    td:nth-child(4),
-    th:nth-child(5),
-    td:nth-child(5) {
-      width: auto;
-      white-space: nowrap;
-    }
-  </style>
+  /* Use automatic layout so columns size to their content */
+  table {
+    border-collapse: collapse;
+    table-layout: auto; /* <-- key */
+    /* no width:100%; */
+  }
+  th, td {
+    border: 1px solid #666;
+    padding: 8px;
+    white-space: normal;       /* wrap text */
+    word-break: break-word;     /* break long words */
+  }
+  /* no explicit width rules on any column */
+</style>
 </head>
 <body>
   <h1>Upload Order</h1>
