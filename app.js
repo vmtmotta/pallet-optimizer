@@ -16,24 +16,20 @@ function parseDims(s="0x0x0") {
 
 // 1) Load your JSON master-data (must be an array of objects)
 window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const resp = await fetch('products-detail.json');
-    const data = await resp.json();    // <-- your JSON array
-    data.forEach(p => {
-      productsBySku[p.REF] = {
-        name:       p.PRODUCT,
-        // Box1
-        box1Units:  Number(p["Box 1 Units"])      || 0,
-        box1Weight: Number(p["Box 1 Weight (kg)"])|| 0,
-        box1Orient: p["Box 1 Orientation (Horizontal / Both)"].toLowerCase(),
-        box1Dims:   parseDims(p["Box 1 Dimensions (cm) (LxDxH)"]),
-        // Box2
-        box2Units:  Number(p["Box 2 Units"])      || 0,
-        box2Weight: Number(p["Box 2 Weight (kg)"])|| 0,
-        box2Orient: p["Box 2 Orientation (Horizontal / Both)"].toLowerCase(),
-        box2Dims:   parseDims(p["Box 2 Dimensions (cm) (LxDxH)"])
-      };
-    });
+-  const resp = await fetch('products-detail.json');
+-  const data = await resp.json();    // <-- data might be an object
+-  data.forEach(p => {
++  const resp = await fetch('products-detail.json');
++  let data = await resp.json();
++  // if JSON was an object keyed by SKU, turn it into an array of values:
++  if (!Array.isArray(data)) data = Object.values(data);
++  data.forEach(p => {
+     productsBySku[p.REF] = {
+       name:       p.PRODUCT,
+       box1Units:  Number(p["Box 1 Units"]) || 0,
+       // …etc…
+     };
+   });
   } catch (e) {
     alert("Could not load products-detail.json");
     console.error(e);
