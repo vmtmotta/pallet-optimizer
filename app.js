@@ -1,190 +1,182 @@
 // app.js
 
-// --- Pallet constraints ---
-const PALLET_LENGTH    = 120;  // cm
-const PALLET_WIDTH     =  80;  // cm
-const MAX_HEIGHT       = 170;  // cm (incl all layers)
-const MAX_GROSS_WEIGHT = 600;  // kg (incl 25kg pallet)
-const PALLET_WEIGHT    =  25;  // kg (empty)
+// Pallet constraints
+const PALLET_LENGTH    = 120,  // cm
+      PALLET_WIDTH     =  80,  // cm
+      MAX_HEIGHT       = 170,  // cm (all layers)
+      MAX_GROSS_WEIGHT = 600,  // kg (incl 25kg pallet)
+      PALLET_WEIGHT    =  25;  // kg (empty pallet)
 
-// Load your detailed product data from JSON
 let products = {};
+
+// 1) Load products-detail.json
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     const resp = await fetch(`products-detail.json?cb=${Date.now()}`);
     products = await resp.json();
-    console.log(`✅ Loaded ${Object.keys(products).length} SKUs from products-detail.json`);
+    console.log(`✅ Loaded ${Object.keys(products).length} SKUs`);
   } catch (err) {
-    console.error('❌ Could not load products-detail.json', err);
-    alert('Error loading product data; see console.');
+    console.error('Failed to load products-detail.json', err);
+    alert('Error loading product master data');
   }
 });
 
-// Wire up “Upload & Optimize” button
 document.getElementById('go').addEventListener('click', async () => {
   const customer = document.getElementById('customer').value.trim();
-  const fileInput = document.getElementById('fileInput');
-  if (!customer || !fileInput.files.length) {
-    return alert('Please enter a customer name and select an .xlsx order file.');
+  const input    = document.getElementById('fileInput');
+  if (!customer || !input.files.length) {
+    return alert('Enter customer and pick an .xlsx file');
   }
 
-  // 1) Read the Excel file
-  const data = await fileInput.files[0].arrayBuffer();
+  // 2) Read the workbook
+  const data = await input.files[0].arrayBuffer();
   const wb   = XLSX.read(data, { type: 'array' });
-
-  // 2) Use whichever sheet is first in the uploaded file
+  // always use first sheet
   const sheetName = wb.SheetNames[0];
-  console.log('Using first sheet:', sheetName);
+  console.log('Using sheet:', sheetName);
   const ws = wb.Sheets[sheetName];
 
-  // 3) Convert to row arrays, skipping exactly 1 header row
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 1 });
-  console.log(`Read ${rows.length} data rows from "${sheetName}". First 3:`, rows.slice(0,3));
+  // 3) Convert to row arrays, skipping first 2 rows
+  //    Row 0 = blank, Row 1 = header, Row 2.. = data
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 2 });
+  console.log(`Read ${rows.length} data rows`, rows.slice(0,3));
 
-  // 4) Build a flat list of box‐instances
-  const instances = [];
-  rows.forEach((r, idx) => {
-    // Expect [ SKU, Product Name, UnitsOrdered, SelectedBox, ... ]
-    const sku    = r[0]?.toString().trim();
-    const name   = r[1]?.toString().trim() || sku;
-    const units  = Number(r[2]) || 0;
-    const choice = r[3]?.toString().trim();  // "1" or "2"
+  // 4) Build box‐instances
+  let instances = [];
+  rows.forEach((r, i) => {
+    // expect: [ A:, B(blank)/BRAND, C:REF, D:PRODUCT, E:BOX USED, F:ORDER IN UNITS, ... ]
+    const skuRaw  = r[1] || r[0];              // sometimes REF is in col B or C
+    const sku     = skuRaw?.toString().trim();
+    const name    = r[2]?.toString().trim() || sku;
+    const choice  = r[3]?.toString().trim().toLowerCase(); // "box1" or "box2"
+    const units   = Number(r[4]) || 0;
 
-    if (!sku || !choice || units <= 0) {
-      console.warn(`Skipping row ${idx} — missing SKU/choice/units:`, r.slice(0,4));
+    console.log(`Row ${i}:`, r.slice(1,5));
+    if (!sku || !products[sku]) {
+      console.warn(`  ↳ skipping, no master data for SKU "${sku}"`);
+      return;
+    }
+    if (!choice || !['box1','box2'].includes(choice)) {
+      console.warn(`  ↳ skipping, bad box choice "${r[3]}"`);
+      return;
+    }
+    if (units <= 0) {
+      console.warn(`  ↳ skipping, units=${units}`);
       return;
     }
 
-    const pd = products[sku];
-    if (!pd) {
-      console.warn(`No master‐data for SKU "${sku}"`);
-      return;
-    }
-
-    const boxKey = 'box' + choice; // yields "box1" or "box2"
-    const boxP   = pd[boxKey];
+    const pd   = products[sku];
+    const boxP = pd[choice];
     if (!boxP || !boxP.units) {
-      console.warn(`No box‐option data for ${sku} → ${boxKey}`);
+      console.warn(`  ↳ no box spec for ${sku}→${choice}`);
       return;
     }
 
     const count = Math.ceil(units / boxP.units);
-    console.log(`Row ${idx}: ${sku}, ${units} units → ${count}×${boxKey} (${boxP.units}/box)`);
+    console.log(`  ↳ ${sku}: ${units} units → ${count} × ${choice} (cap ${boxP.units})`);
 
-    // expand to individual box instances
-    for (let i = 0; i < count; i++) {
+    for (let k = 0; k < count; k++) {
       const [L, D, H] = boxP.dimensions;
       instances.push({
         sku,
         name,
-        fragility: pd.fragility.toLowerCase(),        // "strong"/"medium"/"fragile"
-        weight:    boxP.weight,                       // kg
-        dims:      { l: L, w: D, h: H },              // cm
-        orientation: boxP.orientation.toLowerCase(),  // "horizontal"/"both"
+        fragility: pd.fragility.toLowerCase(),
+        weight:    boxP.weight,
+        dims:      { l: L, w: D, h: H },
+        orientation: boxP.orientation.toLowerCase(),
         canRotate:   boxP.orientation.toLowerCase() === 'both'
       });
     }
   });
 
-  console.log(`Built ${instances.length} total box instances.`);
-  if (!instances.length) {
-    return document.getElementById('output').innerHTML =
-      '<p><em>No boxes to pack. Check your order file.</em></p>';
+  console.log('Total box instances:', instances.length);
+  if (instances.length === 0) {
+    return document.getElementById('output')
+      .innerHTML = `<p><em>No boxes to pack. Check your order file.</em></p>`;
   }
 
   // 5) Sort by fragility: strong → medium → fragile
-  const fragOrder = { strong:0, medium:1, fragile:2 };
-  instances.sort((a,b) => fragOrder[a.fragility] - fragOrder[b.fragility]);
+  const orderMap = { strong:0, medium:1, fragile:2 };
+  instances.sort((a,b) => orderMap[a.fragility] - orderMap[b.fragility]);
 
   // 6) Pack into pallets
   let remaining = instances.slice();
   const pallets  = [];
-
   while (remaining.length) {
-    let usedH = 0, usedWT = PALLET_WEIGHT;
+    let usedH = 0, usedW = PALLET_WEIGHT;
     const pallet = { layers: [] };
 
     while (remaining.length) {
       const { placed, notPlaced } = packLayer(remaining);
       if (!placed.length) break;
 
-      const layerH = Math.max(...placed.map(b => b.box.dims.h));
-      const layerWT = placed.reduce((sum, b) => sum + b.box.weight, 0);
+      const layerH = Math.max(...placed.map(x=>x.box.dims.h));
+      const layerW = placed.reduce((s,x)=>s + x.box.weight, 0);
 
       if (usedH + layerH > MAX_HEIGHT) break;
-      if (usedWT + layerWT > MAX_GROSS_WEIGHT) break;
+      if (usedW + layerW > MAX_GROSS_WEIGHT) break;
 
-      pallet.layers.push({ boxes: placed, height: layerH, weight: layerWT });
-      usedH  += layerH;
-      usedWT += layerWT;
+      pallet.layers.push({ boxes: placed, height: layerH, weight: layerW });
+      usedH += layerH; usedW += layerW;
       remaining = notPlaced;
     }
-
     pallets.push(pallet);
   }
 
-  // 7) Render the results
+  // 7) Render
   renderPallets(pallets);
 });
 
-// Guillotine‐style 2D pack for one layer
+// Guillotine‐style pack one layer
 function packLayer(boxes) {
-  const freeRects = [{ x:0, y:0, w:PALLET_LENGTH, h:PALLET_WIDTH }];
-  const placed    = [];
-  let notPlaced   = boxes.slice();
+  const free = [{ x:0,y:0,w:PALLET_LENGTH,h:PALLET_WIDTH }];
+  const placed = [];
+  let notPlaced = boxes.slice();
 
-  boxes.forEach(box => {
+  boxes.forEach(b => {
     let fit = null;
-    const orients = [{ l:box.dims.l, w:box.dims.w }];
-    if (box.canRotate) orients.push({ l:box.dims.w, w:box.dims.l });
+    const orients = [{ l:b.dims.l, w:b.dims.w }];
+    if (b.canRotate) orients.push({ l:b.dims.w, w:b.dims.l });
 
-    for (const r of freeRects) {
+    for (const r of free) {
       for (const d of orients) {
-        if (d.l <= r.w && d.w <= r.h) { fit = { rect:r, dims:d }; break; }
+        if (d.l <= r.w && d.w <= r.h) { fit={rect:r,dims:d}; break; }
       }
       if (fit) break;
     }
     if (!fit) return;
 
-    placed.push({ box, x:fit.rect.x, y:fit.rect.y, dims:fit.dims });
-    freeRects.splice(freeRects.indexOf(fit.rect), 1);
-    freeRects.push(
-      { x: fit.rect.x + fit.dims.l, y: fit.rect.y,         w: fit.rect.w - fit.dims.l, h: fit.dims.w },
-      { x: fit.rect.x,           y: fit.rect.y + fit.dims.w, w: fit.rect.w,               h: fit.rect.h - fit.dims.w }
+    placed.push({ box:b, x:fit.rect.x, y:fit.rect.y, dims:fit.dims });
+    free.splice(free.indexOf(fit.rect), 1);
+    free.push(
+      { x:fit.rect.x+fit.dims.l, y:fit.rect.y,       w:fit.rect.w-fit.dims.l, h:fit.dims.w },
+      { x:fit.rect.x,            y:fit.rect.y+fit.dims.w, w:fit.rect.w,            h:fit.rect.h-fit.dims.w }
     );
 
-    notPlaced = notPlaced.filter(b => b !== box);
+    notPlaced = notPlaced.filter(x=>x!==b);
   });
-
   return { placed, notPlaced };
 }
 
-// Render function
+// Render pallets & layers
 function renderPallets(pallets) {
-  let html = '', totalBoxes = 0;
-  pallets.forEach((p, pi) => {
+  let html='', boxTotal=0;
+  pallets.forEach((p,pi) => {
     html += `<h2>PALLET ${pi+1}</h2>`;
-    p.layers.forEach((layer, li) => {
-      html += `<h3>Layer ${li+1}: H=${layer.height}cm, Wt=${layer.weight.toFixed(1)}kg</h3>`;
+    p.layers.forEach((ly,li) => {
+      html += `<h3>Layer ${li+1} — H:${ly.height}cm Wt:${ly.weight.toFixed(1)}kg</h3>`;
       const cnt = {};
-      layer.boxes.forEach(b => cnt[b.box.sku] = (cnt[b.box.sku]||0) + 1);
-
-      html += `
-        <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
-          <thead><tr><th>SKU</th><th>Product</th><th># Boxes</th></tr></thead>
-          <tbody>
-      `;
-      for (const [sku,n] of Object.entries(cnt)) {
-        html += `<tr>
-                   <td>${sku}</td>
-                   <td>${products[sku]?.name || sku}</td>
-                   <td style="text-align:right;">${n}</td>
-                 </tr>`;
-        totalBoxes += n;
+      ly.boxes.forEach(x => cnt[x.box.sku]=(cnt[x.box.sku]||0)+1);
+      html += `<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">`
+           + `<thead><tr><th>SKU</th><th>Product</th><th>#Boxes</th></tr></thead><tbody>`;
+      for (let [sku,n] of Object.entries(cnt)) {
+        html += `<tr><td>${sku}</td><td>${products[sku]?.name||sku}</td>`
+             + `<td style="text-align:right;">${n}</td></tr>`;
+        boxTotal += n;
       }
       html += `</tbody></table>`;
     });
   });
-  html += `<h3>TOTAL: ${pallets.length} pallet${pallets.length>1?'s':''} | ${totalBoxes} boxes</h3>`;
+  html += `<h3>TOTAL: ${pallets.length} pallet${pallets.length>1?'s':''} | ${boxTotal} boxes</h3>`;
   document.getElementById('output').innerHTML = html;
 }
