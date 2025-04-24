@@ -1,29 +1,39 @@
-document.getElementById('go').onclick = async () => {
-  const cust = document.getElementById('customer').value.trim();
-  const f = document.getElementById('fileInput').files[0];
-  if (!cust || !f) {
-    alert('Please enter customer and select a file.');
+// frontend/app.js
+// Ensure you've loaded xlsx.full.min.js in index.html!
+
+document.getElementById('go').addEventListener('click', async () => {
+  const customer = document.getElementById('customer').value.trim();
+  const fileInput = document.getElementById('fileInput');
+  if (!customer || !fileInput.files.length) {
+    alert('Please enter a customer name and select an .xlsx file.');
     return;
   }
-  // 1) Read Excel:
-  const data = await f.arrayBuffer();
+
+  // 1) Read the Excel file
+  const data = await fileInput.files[0].arrayBuffer();
   const wb = XLSX.read(data, { type: 'array' });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header:1, range:3 });
-  // 2) Simple “optimizer”: group by box / SKU
-  //    *Replace this stub with your real packing logic.*
-  const plan = [];
-  rows.forEach(r => plan.push({ sku:r[2], box:r[3], qty:r[4] }));
-  // 3) Render on page
-  const out = document.getElementById('output');
-  out.innerHTML = `<h2>Plan for ${cust}</h2><pre>${JSON.stringify(plan, null,2)}</pre>`;
-  // 4) Generate PDF
-  const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text(`Pallet Plan for ${cust}`, 10, 10);
-  doc.setFontSize(12);
-  plan.forEach((it,i) => {
-    doc.text(`${i+1}. SKU ${it.sku} – Box ${it.box} – Qty ${it.qty}`, 10, 20 + i*7);
+  // skip first 3 header rows
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 3 });
+
+  // 2) Build a flat “Pallet 1 → Layer 1” list
+  const items = rows
+    .filter(r => r[2])             // only rows with SKU
+    .map(r => ({                   // map to SKU/name/box
+      sku:   r[2].trim(),
+      name:  r[3].trim(),
+      box:   r[4].trim()
+    }));
+
+  // 3) Render HTML exactly as requested
+  let html = `<h2>PALLET 1</h2>`;
+  html += `<h3>Layer 1</h3><ul>`;
+  items.forEach(it => {
+    html += `<li>${it.sku} | ${it.name} | ${it.box}</li>`;
   });
-  doc.save('pallet-plan.pdf');
-};
+  html += `</ul>`;
+  html += `<p><strong>SUMMARY PALLET 1:</strong> ${items.length} boxes</p>`;
+  html += `<h3>TOTAL: 1 pallet | ${items.length} boxes</h3>`;
+
+  document.getElementById('output').innerHTML = html;
+});
