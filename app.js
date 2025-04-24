@@ -56,7 +56,7 @@ document.getElementById('go').addEventListener('click', async () => {
   console.log(`Header row at ${headerRow}: cols REF=${idxREF}, PROD=${idxPROD}, BOX=${idxBOX}, UNITS=${idxUNITS}`);
 
   // 5) Read data rows starting below headerRow
-  const data = XLSX.utils.sheet_to_json(ws, { header:1, range: headerRow+1 });
+  const data = XLSX.utils.sheet_to_json(ws, { header:1, range: headerRow + 2 });
   // 6) Stop at first empty REF
   const orders = [];
   for (let r of data) {
