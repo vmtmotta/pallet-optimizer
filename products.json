@@ -1,0 +1,322 @@
+{
+  "JG.AZ.008": {
+    "box1Units": 8,
+    "box2Units": null
+  },
+  "JG.AZ.022": {
+    "box1Units": 8,
+    "box2Units": null
+  },
+  "JG.AZ.039": {
+    "box1Units": 8,
+    "box2Units": null
+  },
+  "JG.AZ.046": {
+    "box1Units": 8,
+    "box2Units": null
+  },
+  "JG.AZ.750": {
+    "box1Units": 4,
+    "box2Units": null
+  },
+  "JG.AZ.767": {
+    "box1Units": null,
+    "box2Units": null
+  },
+  "JG.AZ.774": {
+    "box1Units": null,
+    "box2Units": null
+  },
+  "JG.AZ.781": {
+    "box1Units": null,
+    "box2Units": null
+  },
+  "JG.AZ.750": {
+    "box1Units": 4,
+    "box2Units": null
+  },
+  "JG.AZ.798": {
+    "box1Units": 4,
+    "box2Units": null
+  },
+  "JG.AZ.922": {
+    "box1Units": 4,
+    "box2Units": null
+  },
+  "JG.CO.305": {
+    "box1Units": null,
+    "box2Units": 24
+  },
+  "JG.CO.312": {
+    "box1Units": null,
+    "box2Units": 16
+  },
+  "JG.CO.329": {
+    "box1Units": null,
+    "box2Units": 16
+  },
+  "JG.CO.811": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.405": {
+    "box1Units": null,
+    "box2Units": 10
+  },
+  "JG.CO.336": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.435": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.442": {
+    "box1Units": null,
+    "box2Units": 10
+  },
+  "JG.CO.428": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.842": {
+    "box1Units": null,
+    "box2Units": 6
+  },
+  "JG.CO.859": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.343": {
+    "box1Units": null,
+    "box2Units": 16
+  },
+  "JG.CO.320": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.459": {
+    "box1Units": null,
+    "box2Units": 10
+  },
+  "JG.CO.354": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.644": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.350": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.276": {
+    "box1Units": null,
+    "box2Units": 5
+  },
+  "JG.CO.283": {
+    "box1Units": null,
+    "box2Units": 5
+  },
+  "JG.CO.736": {
+    "box1Units": null,
+    "box2Units": 6
+  },
+  "JG.CO.404": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.411": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.290": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.306": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.399": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.804": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.374": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.651": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.059": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.CO.558": {
+    "box1Units": null,
+    "box2Units": 7
+  },
+  "JG.CO.347": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "JG.PA.909": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.916": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.923": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.961": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.978": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.947": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.429": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "JG.PA.286": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "MO.CO.497": {
+    "box1Units": 12,
+    "box2Units": null
+  },
+  "MO.CO.503": {
+    "box1Units": 12,
+    "box2Units": null
+  },
+  "MO.CO.473": {
+    "box1Units": 10,
+    "box2Units": null
+  },
+  "AT.CO.484": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "AT.PA.576": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AT.PA.590": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AT.PA.613": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AT.PA.620": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AT.PA.583": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AT.PA.606": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AT.PA.637": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AB.CO.061": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "AB.CO.078": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "AB.CO.941": {
+    "box1Units": null,
+    "box2Units": 6
+  },
+  "AB.CO.972": {
+    "box1Units": null,
+    "box2Units": 6
+  },
+  "AB.CO.965": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AB.CO.958": {
+    "box1Units": null,
+    "box2Units": 8
+  },
+  "AB.CO.047": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AB.CO.016": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AB.CO.989": {
+    "box1Units": null,
+    "box2Units": 9
+  },
+  "AB.CO.115": {
+    "box1Units": null,
+    "box2Units": 10
+  },
+  "AB.CO.139": {
+    "box1Units": null,
+    "box2Units": 14
+  },
+  "CWS.SAR.01": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.02": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.03": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.04": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.05": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.06": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.07": {
+    "box1Units": 6,
+    "box2Units": null
+  },
+  "CWS.SAR.08": {
+    "box1Units": 6,
+    "box2Units": null
+  }
+}
