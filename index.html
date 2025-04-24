@@ -9,31 +9,33 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <!-- Table styling -->
-  <style>
-  /* Allow horizontal scroll if table is wider than viewport */
+ <style>
+  /* 1) Make the output container scrollable if table is wider than screen */
   #output {
     overflow-x: auto;
   }
 
-  /* Table with automatic layout (columns sized by content) */
+  /* 2) Table auto‐sizes to its content (no width:100%) */
   table {
     border-collapse: collapse;
-    table-layout: auto; /* each column width = widest cell */
+    table-layout: auto;  /* columns sized by their content */
+    width: auto;         /* ← key: remove any 100% or fixed width */
   }
 
-  /* Cells: border & padding */
+  /* 3) Cells get borders and padding */
   th, td {
     border: 1px solid #666;
     padding: 8px;
-    white-space: nowrap; /* no wrapping, so width = longest content */
+    /* By default, prevent wrapping so width = longest word/text */
+    white-space: nowrap;
   }
 
-  /* If you want the Product column to wrap, you can override here: */
+  /* 4) If you want the Product column to wrap, override here: */
   th:nth-child(2),
   td:nth-child(2) {
-    white-space: normal;   /* allow wrapping in Product column */
+    white-space: normal;       /* allow wrapping in column 2 */
     word-break: break-word;
-    min-width: 200px;      /* optional: set a minimum width */
+    /* no width specified—auto‐size to the widest unwrapped cell in this column */
   }
 </style>
 </head>
