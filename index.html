@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <title>Pallet Optimizer</title>
   <style>
-    body { font-family: sans-serif; margin: 1rem; }
+    body { font-family: sans-serif; padding: 1rem; }
     input, button { font-size: 1rem; margin: 0.5rem 0; }
-    table { border-collapse: collapse; margin-bottom: 1rem; width: 100%; }
-    th, td { border: 1px solid #666; padding: 0.25rem 0.5rem; text-align: left; }
-    h1, h2, h3 { margin: 1rem 0 0.5rem; }
-    #results p { margin: 0.5rem 0; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
+    th, td { border: 1px solid #666; padding: 0.25rem 0.5rem; }
+    h1,h2,h3 { margin: 1rem 0 0.5rem; }
   </style>
 </head>
 <body>
@@ -17,22 +16,20 @@
   <h1>Pallet Optimizer</h1>
 
   <label>
-    Customer name:<br/>
-    <input id="customer" type="text" placeholder="Enter customer name" /><br/>
-  </label>
+    Customer:<br>
+    <input id="customer" type="text" placeholder="Customer name">
+  </label><br>
 
   <label>
-    Order file (.xlsx):<br/>
-    <input id="fileInput" type="file" accept=".xlsx" /><br/>
-  </label>
+    Order (.xlsx):<br>
+    <input id="fileInput" type="file" accept=".xlsx">
+  </label><br>
 
-  <button id="go">Upload &amp; Optimize</button>
+  <button id="go">Upload & Optimize</button>
 
   <div id="results"></div>
 
-  <!-- XLSX library -->
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-  <!-- Your application code -->
   <script src="app.js"></script>
 </body>
 </html>
