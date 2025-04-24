@@ -2,48 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pallet Optimizer</title>
-
-  <!-- XLSX library -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-  <!-- Table styling -->
- <style>
-  /* 1) Allow horizontal scrolling if the table is wider than the viewport */
-  #output {
-    overflow-x: auto;
-  }
-
-  /* 2) Make the table size itself to its content */
-  table {
-    border-collapse: collapse;
-    table-layout: auto;       /* auto ⇒ columns size to content */
-    width: auto !important;   /* force override of any 100% width */
-  }
-
-  /* 3) No wrapping ⇒ column width = longest cell */
-  th, td {
-    border: 1px solid #666;
-    padding: 8px;
-    white-space: nowrap !important;
-  }
-</style>
+  <style>
+    body { font-family: sans-serif; margin: 1rem; }
+    input, button { font-size: 1rem; margin: 0.5rem 0; }
+    table { border-collapse: collapse; margin-bottom: 1rem; width: 100%; }
+    th, td { border: 1px solid #666; padding: 0.25rem 0.5rem; text-align: left; }
+    h1, h2, h3 { margin: 1rem 0 0.5rem; }
+    #results p { margin: 0.5rem 0; }
+  </style>
 </head>
 <body>
-  <h1>Upload Order</h1>
+
+  <h1>Pallet Optimizer</h1>
+
   <label>
-    Customer:
-    <input id="customer" type="text" placeholder="Customer name" />
+    Customer name:
+    <input id="customer" type="text" placeholder="Enter customer name" />
   </label>
-  <br /><br />
-  <input id="fileInput" type="file" accept=".xlsx" />
-  <br /><br />
-  <button id="go">Upload & Optimize</button>
+  <br/>
 
-  <div id="output" style="margin-top:20px;"></div>
+  <label>
+    Order file (.xlsx):
+    <input id="fileInput" type="file" accept=".xlsx" />
+  </label>
+  <br/>
 
-  <!-- Your app code -->
+  <button id="go" disabled>Upload &amp; Optimize</button>
+
+  <div id="results"></div>
+
+  <!-- XLSX library -->
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- Your application code -->
   <script src="app.js"></script>
 </body>
 </html>
