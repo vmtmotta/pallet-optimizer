@@ -48,18 +48,42 @@ document.getElementById('go').addEventListener('click', async () => {
     return { sku, name, boxKey, units, boxes };
   });
 
-  // 5) Render your formatted report
-  let html = `<h2>PALLET 1</h2><h3>Layer 1</h3><ul>`;
-  items.forEach(it => {
-    html += `<li>${it.sku} | ${it.name} | ${it.units} units | ${it.boxKey} → ${it.boxes} boxes</li>`;
-  });
-  html += `</ul>`;
-
-  // 6) Totals
-  const totalUnits = items.reduce((sum, it) => sum + it.units, 0);
-  const totalBoxes = items.reduce((sum, it) => sum + it.boxes, 0);
-  html += `<p><strong>SUMMARY PALLET 1:</strong> ${totalUnits} units | ${totalBoxes} boxes</p>`;
-  html += `<h3>TOTAL: 1 pallet | ${totalBoxes} boxes | ${totalUnits} units</h3>`;
-
-  document.getElementById('output').innerHTML = html;
+ // 5) Render your formatted report as a table
+let html = `<h2>PALLET 1</h2>`;
+html += `
+  <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>Product</th>
+        <th>Units</th>
+        <th>Box Type</th>
+        <th>Boxes Needed</th>
+      </tr>
+    </thead>
+    <tbody>
+`;
+items.forEach(it => {
+  html += `
+    <tr>
+      <td>${it.sku}</td>
+      <td>${it.name}</td>
+      <td style="text-align:right;">${it.units}</td>
+      <td style="text-align:center;">${it.boxKey}</td>
+      <td style="text-align:right;">${it.boxes}</td>
+    </tr>
+  `;
 });
+html += `
+    </tbody>
+  </table>
+`;
+
+// 6) Totals (below the table)
+const totalUnits = items.reduce((sum, it) => sum + it.units, 0);
+const totalBoxes = items.reduce((sum, it) => sum + it.boxes, 0);
+html += `<p>
+  <strong>SUMMARY PALLET 1:</strong>
+  ${totalUnits} units | ${totalBoxes} boxes
+</p>`;
+html += `<h3>TOTAL: 1 pallet | ${totalBoxes} boxes | ${totalUnits} units</h3>`;
