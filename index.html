@@ -17,18 +17,17 @@
   <h1>Pallet Optimizer</h1>
 
   <label>
-    Customer name:
-    <input id="customer" type="text" placeholder="Enter customer name" />
+    Customer name:<br/>
+    <input id="customer" type="text" placeholder="Enter customer name" /><br/>
   </label>
-  <br/>
 
   <label>
-    Order file (.xlsx):
-    <input id="fileInput" type="file" accept=".xlsx" />
+    Order file (.xlsx):<br/>
+    <input id="fileInput" type="file" accept=".xlsx" /><br/>
   </label>
-  <br/>
 
-  <button id="go" disabled>Upload &amp; Optimize</button>
+  <!-- note: no `disabled` here, so you can click even if JSON fetch fails -->
+  <button id="go">Upload &amp; Optimize</button>
 
   <div id="results"></div>
 
