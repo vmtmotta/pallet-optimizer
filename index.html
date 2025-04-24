@@ -10,32 +10,32 @@
 
   <!-- Table styling -->
  <style>
-  /* 1) Make the output container scrollable if table is wider than screen */
+  /* Make the output area scroll if the table is wider than the viewport */
   #output {
     overflow-x: auto;
+    white-space: nowrap; /* prevent container from wrapping the table */
   }
 
-  /* 2) Table auto‐sizes to its content (no width:100%) */
+  /* Render the table as inline-table so its width = content */
   table {
+    display: inline-table;
+    table-layout: auto;      /* size columns to their content */
     border-collapse: collapse;
-    table-layout: auto;  /* columns sized by their content */
-    width: auto;         /* ← key: remove any 100% or fixed width */
   }
 
-  /* 3) Cells get borders and padding */
+  /* Borders and padding */
   th, td {
     border: 1px solid #666;
     padding: 8px;
-    /* By default, prevent wrapping so width = longest word/text */
-    white-space: nowrap;
+    white-space: nowrap;     /* no wrap by default, so width = longest text */
   }
 
-  /* 4) If you want the Product column to wrap, override here: */
+  /* Allow wrapping in Product column (2nd col) if very long */
   th:nth-child(2),
   td:nth-child(2) {
-    white-space: normal;       /* allow wrapping in column 2 */
+    white-space: normal;
     word-break: break-word;
-    /* no width specified—auto‐size to the widest unwrapped cell in this column */
+    /* you can optionally set a min-width if desired */
   }
 </style>
 </head>
